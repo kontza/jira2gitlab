@@ -392,22 +392,24 @@ def migrate_user(jira_username):
     except requests.exceptions.RequestException as e:
         raise Exception(f"Unable to read {jira_username} from Jira!\n{e}")
     jira_user = jira_user.json()
+    payload = {
+        "admin": MAKE_USERS_TEMPORARILY_ADMINS,
+        "email": jira_user["emailAddress"],
+        "username": jira_username.split("@")[0],
+        "name": jira_user["displayName"],
+        "password": str(uuid.uuid4()),
+    }
 
     try:
         gl_user = requests.post(
             f"{GITLAB_API}/users",
             headers={"PRIVATE-TOKEN": GITLAB_TOKEN},
             verify=VERIFY_SSL_CERTIFICATE,
-            json={
-                "admin": MAKE_USERS_TEMPORARILY_ADMINS,
-                "email": jira_user["emailAddress"],
-                "username": jira_username,
-                "name": jira_user["displayName"],
-                "password": NEW_GITLAB_USERS_PASSWORD,
-            },
+            json=payload,
         )
         gl_user.raise_for_status()
     except requests.exceptions.RequestException as e:
+        log.error(json.dumps(payload))
         raise Exception(f"Unable to create {jira_username} in Gitlab!\n{e}")
     gl_user = gl_user.json()
 
@@ -691,7 +693,11 @@ def migrate_project(jira_project, gitlab_project):
             )
             gl_issue.raise_for_status()
         except requests.exceptions.RequestException as e:
-            log.error(f"data: {json.dumps(data)} ... ")
+            log.error(f"URL: {GITLAB_API}/projects/{gitlab_project_id}/issues")
+            headers = {"PRIVATE-TOKEN": GITLAB_TOKEN, "Sudo": gl_reporter}
+            log.error(f"HDR: {headers}")
+            log.error(f"VFY: {VERIFY_SSL_CERTIFICATE}")
+            log.error(f"DAT: {json.dumps(data)} ... ")
             raise Exception(
                 f"Unable to create Gitlab issue for Jira issue {issue['key']}\n{e}"
             )

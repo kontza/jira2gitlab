@@ -78,7 +78,9 @@ def project_users(jira_project):
             author = comment["author"]["name"]
             jira_users.add(author)
 
-    log.info(*list(dict.fromkeys(sorted(jira_users))))
+    log.info("Jira users:")
+    for u in jira_users:
+        log.info(f"  {u}")
 
 
 for jira_project, gitlab_project in PROJECTS.items():
