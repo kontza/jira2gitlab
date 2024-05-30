@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.12
+#!/usr/bin/env python3
 import gitlab
 from jira2gitlab_secrets import *
 from rich.console import Console
