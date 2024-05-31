@@ -608,13 +608,17 @@ def migrate_project(jira_project, gitlab_project):
 
         # Epic name to label
         if JIRA_EPIC_FIELD in issue["fields"] and issue["fields"][JIRA_EPIC_FIELD]:
-            epic_info = requests.get(
-                f"{JIRA_API}/issue/{issue['fields'][JIRA_EPIC_FIELD]['id']}/?fields=summary",
-                auth=HTTPBasicAuth(*JIRA_ACCOUNT),
-                verify=VERIFY_SSL_CERTIFICATE,
-                headers={"Content-Type": "application/json"},
-            ).json()
-            gl_labels.append(epic_info["fields"]["summary"])
+            log.info(f"Issue fields: {json.dumps(issue['fields'])}")
+            try:
+                epic_info = requests.get(
+                    f"{JIRA_API}/issue/{issue['fields'][JIRA_EPIC_FIELD]['id']}/?fields=summary",
+                    auth=HTTPBasicAuth(*JIRA_ACCOUNT),
+                    verify=VERIFY_SSL_CERTIFICATE,
+                    headers={"Content-Type": "application/json"},
+                ).json()
+                gl_labels.append(epic_info["fields"]["summary"])
+            except Exception as e:
+                gl_labels.append(issue["fields"][JIRA_EPIC_FIELD])
 
         # Last fix versions to milestone
         gl_milestone_id = None
