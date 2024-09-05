@@ -480,7 +480,17 @@ def migrate_project(jira_project, gitlab_project):
     # This assumes they will all fit in memory
     start_at = 0
     jira_issues = []
-    while True:
+    should_download = False
+    prefetch_filename = "jira-issues.json"
+    try:
+        with open(prefetch_filename, "r") as issues_file:
+            jira_issues = json.load(issues_file)
+    except FileNotFoundError:
+        log.info(
+            f"No prefetched Jira issue list found ({prefetch_filename}), will download issues"
+        )
+        should_download = True
+    while should_download:
         query = (
             f'{JIRA_API}/search?jql=project="{jira_project}" '
             f"ORDER BY key&fields=*navigable,attachment,comment,"
@@ -507,7 +517,10 @@ def migrate_project(jira_project, gitlab_project):
     # Import issues into Gitlab
     for index, issue in enumerate(jira_issues, start=1):
         jira_issue_remove_unstable_data(issue)
-        issue_hash = dict_hash(issue)
+        if HASH_DETECTION:
+            issue_hash = dict_hash(issue)
+        else:
+            issue_hash = issue["fields"]["updated"]
         weight = None
         replacements = dict()
 
@@ -791,7 +804,7 @@ def migrate_project(jira_project, gitlab_project):
             # Add comments to reference BitBucket commits
             # Only the references to repos mapped in PROJECTS_BITBUCKET are added
             # Note: this an internal call, it is not part of the public API. (https://jira.atlassian.com/browse/JSWCLOUD-16901)
-            if REFERECE_BITBUCKET_COMMITS:
+            if REFERENCE_BITBUCKET_COMMITS:
                 devel_info = requests.get(
                     f"{JIRA_URL}/rest/dev-status/latest/issue/detail?issueId={issue['id']}&applicationType=stash&dataType=repository",
                     auth=HTTPBasicAuth(*JIRA_ACCOUNT),
@@ -1025,16 +1038,21 @@ signal.signal(signal.SIGINT, sigint_handler)
 IMPORT_SUCCEEDED = False
 
 BITBUCKET_COMMIT_PATTERN = ""
-if REFERECE_BITBUCKET_COMMITS and BITBUCKET_URL:
+if REFERENCE_BITBUCKET_COMMITS and BITBUCKET_URL:
     BITBUCKET_COMMIT_PATTERN = re.compile(
         rf"^{BITBUCKET_URL}/projects/([^/]+)/repos/([^/]+)/commits/\w+$"
     )
 
 if __name__ == "__main__":
     if Path(IMPORT_STATUS_FILENAME).exists():
-        continue_pickle = input("Pickle file exists, continue? (y/n)\n")
-        if continue_pickle in "nN":
-            sys.exit(1)
+        if IMPORT_AUTO_CONTINUE:
+            log.info(
+                f"Found an existing {IMPORT_STATUS_FILENAME}, continuing with that"
+            )
+        else:
+            continue_pickle = input("Pickle file exists, continue? (y/n)\n")
+            if continue_pickle in "nN":
+                sys.exit(1)
 
     # Get available Gitlab namespaces
     gl_namespaces = dict()

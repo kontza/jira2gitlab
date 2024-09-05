@@ -3,3 +3,4 @@ urllib3
 requests >= 2.4.2
 rich
 python-gitlab
+jira

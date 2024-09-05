@@ -44,6 +44,9 @@ GITLAB_PREMIUM = True
 # Name of the file storing the status of imports
 IMPORT_STATUS_FILENAME = 'import_status.pickle'
 
+# Automatically continue a previous import if the pickle file exists
+IMPORT_AUTO_CONTINUE = True
+
 # Set this to false if JIRA / Gitlab is using self-signed certificate.
 VERIFY_SSL_CERTIFICATE = False
 
@@ -90,7 +93,7 @@ ADD_JIRA_KEY_TO_TITLE = True
 # Limitations:
 # - Bitbucket repositories need to be imported in Gitlab with the same project name (the group name can change)
 # - This feature only works if the issue project and the commit project are in the same Gitlab group
-REFERECE_BITBUCKET_COMMITS = True
+REFERENCE_BITBUCKET_COMMITS = False
 
 # Try force converting broken jira tables (tables that have no headers)
 FORCE_REPAIR_JIRA_TABLES = False
@@ -100,6 +103,10 @@ FORCE_REPAIR_JIRA_TABLES = False
 # Therefore this may cause 500 errors on some unicode characters.
 # When set to False, filenames are replaced with UUIDs.
 KEEP_ORIGINAL_ATTACHMENT_FILENAMES = False
+
+# True: Use object hash to detect a changed Jira issue.
+# False: Use Jira issue's '.fields.updated' for detection
+HASH_DETECTION = False
 
 ################################################################
 # Import mappings
